@@ -35,7 +35,7 @@ func (this *ProductsState) Process(inbox chan actor.Message) {
 				}
 			}
 		default:
-			slog.Warn("this msg is unknown", slog.String("msg", msg.ToString()))
+			slog.Warn("this msg is unknown", slog.String("msg", msg.String()))
 		}
 		slog.Info("num of products", slog.Int("total", len(this.products)))
 		slog.Info("num of pieces of first", slog.Int("num", this.products[0].Quantity))
@@ -59,24 +59,23 @@ func NewProductState() *ProductsState {
 
 func main() {
 	productActor := actor.NewActor(
-		actor.NewPID("local", "product"),
+		actor.NewAddress("local", "product"),
 		NewProductState(),
 	)
 	productActor.Activate()
-	ds := actor.NewActorDispatcher()
-	ds.RegisterActor(&productActor)
+	actor.RegisterActor(&productActor)
 	msg := actor.Message{
-		From: *actor.NewPID("local", "product"),
-		To:   *actor.NewPID("local", "product"),
+		From: *actor.NewAddress("local", "product"),
+		To:   *actor.NewAddress("local", "product"),
 		Body: AddProductMsg{Product{Code: "ciao", Quantity: 4}},
 	}
 	msg2 := actor.Message{
-		From: *actor.NewPID("local", "product"),
-		To:   *actor.NewPID("local", "product"),
+		From: *actor.NewAddress("local", "product"),
+		To:   *actor.NewAddress("local", "product"),
 		Body: AddQuantityProductMsg{Product{Code: "ciao", Quantity: 14}},
 	}
-	ds.DispatchMessage(msg)
-	ds.DispatchMessage(msg2)
+	actor.DispatchMessage(msg)
+	actor.DispatchMessage(msg2)
 
 	<-time.After(2 * time.Second)
 	fmt.Println("end")
