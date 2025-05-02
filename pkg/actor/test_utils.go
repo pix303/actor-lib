@@ -37,6 +37,11 @@ func (this *TestProcessorState) Process(inbox chan Message) {
 	}
 }
 
+func (this *TestProcessorState) Shutdown() {
+	this.Data = ""
+	slog.Info("all clean after shutdown")
+}
+
 func GenerateAddressForTest(prefix string) (toPID *Address, fromPID *Address) {
 	if prefix == "" {
 		prefix = "test"

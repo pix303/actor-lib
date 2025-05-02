@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log/slog"
+	"os"
 	"time"
 
 	"github.com/pix303/actor-lib/pkg/actor"
@@ -42,6 +43,11 @@ func (this *ProductsState) Process(inbox chan actor.Message) {
 	}
 }
 
+func (this *ProductsState) Shutdown() {
+	this.products = make([]Product, 0)
+	slog.Info("clean all product")
+}
+
 type AddProductMsg struct {
 	Product Product
 }
@@ -58,10 +64,14 @@ func NewProductState() *ProductsState {
 }
 
 func main() {
-	productActor := actor.NewActor(
+	productActor, err := actor.NewActor(
 		actor.NewAddress("local", "product"),
 		NewProductState(),
 	)
+	if err != nil {
+		os.Exit(1)
+	}
+
 	productActor.Activate()
 	actor.RegisterActor(&productActor)
 	msg := actor.Message{

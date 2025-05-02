@@ -1,5 +1,6 @@
 package actor
 
-type Processor interface {
+type MessageProcessor interface {
 	Process(inbox chan Message)
+	Shutdown()
 }

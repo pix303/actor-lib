@@ -11,7 +11,7 @@ import (
 
 func TestDispatcher(t *testing.T) {
 	slog.Info("---- start test dispa")
-	actor.DropAllActors()
+	actor.Shutdown()
 	p := actor.GetPostman()
 	assert.NotNil(t, p)
 
@@ -36,14 +36,14 @@ func TestDispatcher(t *testing.T) {
 	a.Send(msg)
 	<-time.After(time.Millisecond * 300)
 
-	astate := a.GetProcessor().(*actor.TestProcessorState)
-	bstate := b.GetProcessor().(*actor.TestProcessorState)
+	astate := a.GetMessageProcessor().(*actor.TestProcessorState)
+	bstate := b.GetMessageProcessor().(*actor.TestProcessorState)
 
 	assert.Contains(t, bstate.Data, "three")
 	assert.Contains(t, astate.Data, "return msg")
 
 	assert.Equal(t, actor.NumActors(), 2)
-	actor.DropAllActors()
+	actor.Shutdown()
 	assert.Equal(t, actor.NumActors(), 0)
 	slog.Info("---- end test dispa")
 }

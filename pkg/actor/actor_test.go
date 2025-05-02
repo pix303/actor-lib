@@ -14,7 +14,7 @@ func TestActor(t *testing.T) {
 	toPID, fromPID := actor.GenerateAddressForTest("test")
 
 	a := actor.GenerateActorForTest("test")
-	state := a.GetProcessor().(*actor.TestProcessorState)
+	state := a.GetMessageProcessor().(*actor.TestProcessorState)
 
 	assert.True(t, a.IsClosed())
 	a.Activate()
@@ -47,9 +47,9 @@ func TestActor(t *testing.T) {
 
 	a.Drop()
 	assert.Nil(t, a.GetAddress())
-	assert.Nil(t, a.GetProcessor())
+	assert.Nil(t, a.GetMessageProcessor())
 
-	actor.DropAllActors()
+	actor.Shutdown()
 	assert.Equal(t, 0, actor.NumActors())
 	slog.Info("---- end test actor")
 }

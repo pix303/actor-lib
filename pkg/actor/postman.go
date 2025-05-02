@@ -1,12 +1,18 @@
 package actor
 
 import (
+	"context"
 	"log/slog"
+	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 )
 
 type Postman struct {
-	actors map[string]*Actor
+	actors     map[string]*Actor
+	context    context.Context
+	cancelFunc func()
 }
 
 var instance Postman
@@ -14,12 +20,31 @@ var onceGuard sync.Once
 
 func GetPostman() *Postman {
 	onceGuard.Do(func() {
+		ctx, cancFunc := context.WithCancel(context.Background())
+		extCancel := make(chan os.Signal, 1)
+		signal.Notify(extCancel, syscall.SIGINT, syscall.SIGTERM)
+
+		go func() {
+			for {
+				s := <-extCancel
+				switch s {
+				case syscall.SIGINT, syscall.SIGTERM:
+					Shutdown()
+				}
+			}
+		}()
+
 		instance = Postman{
-			actors: make(map[string]*Actor, 10),
+			actors:     make(map[string]*Actor, 10),
+			context:    ctx,
+			cancelFunc: cancFunc,
 		}
 	})
-
 	return &instance
+}
+
+func (this *Postman) GetContext() context.Context {
+	return this.context
 }
 
 func RegisterActor(actor *Actor) {
@@ -39,12 +64,13 @@ func DispatchMessage(msg Message) {
 	}
 }
 
-func DropAllActors() {
+func Shutdown() {
 	p := GetPostman()
 	for _, a := range p.actors {
 		a.Drop()
 	}
 	p.actors = make(map[string]*Actor)
+	p.cancelFunc()
 }
 
 func NumActors() int {

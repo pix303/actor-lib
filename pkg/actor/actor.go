@@ -12,24 +12,24 @@ var (
 )
 
 type Actor struct {
-	address    *Address
-	inbox      chan Message
-	withReturn bool
-	isClosed   bool
-	processor  Processor
-	postman    *Postman
+	address          *Address
+	inbox            chan Message
+	withReturn       bool
+	isClosed         bool
+	messageProcessor MessageProcessor
+	postman          *Postman
 }
 
-func NewActor(address *Address, processor Processor) (Actor, error) {
+func NewActor(address *Address, processor MessageProcessor) (Actor, error) {
 	inbox := make(chan Message, 100)
 	if address == nil {
 		return Actor{}, AddressNilErr
 	}
 	return Actor{
-		address:   address,
-		processor: processor,
-		inbox:     inbox,
-		isClosed:  true,
+		address:          address,
+		messageProcessor: processor,
+		inbox:            inbox,
+		isClosed:         true,
 	}, nil
 }
 
@@ -37,7 +37,7 @@ func (this *Actor) Activate() {
 	if this.IsClosed() {
 		slog.Info("Actor activated", slog.String("address", this.address.String()))
 		this.isClosed = false
-		p := this.GetProcessor()
+		p := this.GetMessageProcessor()
 		if p != nil {
 			go p.Process(this.inbox)
 		}
@@ -52,8 +52,8 @@ func (this *Actor) IsClosed() bool {
 	return this.isClosed
 }
 
-func (this *Actor) GetProcessor() Processor {
-	return this.processor
+func (this *Actor) GetMessageProcessor() MessageProcessor {
+	return this.messageProcessor
 }
 
 func (this *Actor) Deactivate() {
@@ -76,9 +76,13 @@ func (this *Actor) Send(msg Message) {
 }
 
 func (this *Actor) Drop() {
+	mp := this.GetMessageProcessor()
+	if mp != nil {
+		mp.Shutdown()
+	}
 	this.Deactivate()
 	this.address = nil
-	this.processor = nil
+	this.messageProcessor = nil
 	this.inbox = nil
 	this.postman = nil
 }
