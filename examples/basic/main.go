@@ -72,7 +72,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	productActor.Activate()
 	actor.RegisterActor(&productActor)
 	msg := actor.Message{
 		From: *actor.NewAddress("local", "product"),

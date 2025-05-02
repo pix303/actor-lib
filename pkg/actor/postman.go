@@ -51,6 +51,7 @@ func RegisterActor(actor *Actor) {
 	slog.Info("register an actor", slog.Any("a", actor))
 	p := GetPostman()
 	p.actors[actor.GetAddress().String()] = actor
+	actor.Activate()
 }
 
 func DispatchMessage(msg Message) {

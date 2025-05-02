@@ -17,7 +17,6 @@ func TestActor(t *testing.T) {
 	state := a.GetMessageProcessor().(*actor.TestProcessorState)
 
 	assert.True(t, a.IsClosed())
-	a.Activate()
 	assert.False(t, a.IsClosed())
 
 	actor.RegisterActor(a)
