@@ -17,11 +17,10 @@ func TestActor(t *testing.T) {
 	state := a.GetMessageProcessor().(*actor.TestProcessorState)
 
 	assert.True(t, a.IsClosed())
-	assert.False(t, a.IsClosed())
 
 	actor.RegisterActor(a)
 
-	var firstEvent actor.FirstEvent = "one"
+	var firstEvent actor.FirstMessage = "one"
 	a.Send(actor.Message{To: *toPID, From: *fromPID, Body: firstEvent})
 	<-time.After(time.Millisecond * 10)
 	assert.Contains(t, a.GetAddress().String(), "test-sender")
@@ -31,7 +30,7 @@ func TestActor(t *testing.T) {
 	a.Deactivate()
 
 	assert.True(t, a.IsClosed())
-	var secondEvent actor.SecondEvent = "two"
+	var secondEvent actor.SecondMessage = "two"
 	a.Send(actor.Message{To: *toPID, From: *fromPID, Body: secondEvent})
 	<-time.After(time.Millisecond * 10)
 	assert.Contains(t, state.Data, "first event")
@@ -43,6 +42,16 @@ func TestActor(t *testing.T) {
 	<-time.After(time.Millisecond * 10)
 	assert.Contains(t, state.Data, "second event")
 	assert.Contains(t, state.Data, "two")
+
+	var wrb actor.WithSyncResponse = "with response message"
+	withResponse := actor.Message{
+		From: *fromPID,
+		To:   *toPID,
+		Body: wrb,
+	}
+	resp, err := actor.DispatchMessageSync(withResponse)
+	assert.Nil(t, err)
+	assert.Contains(t, resp.Body, "recived")
 
 	a.Drop()
 	assert.Nil(t, a.GetAddress())

@@ -2,11 +2,16 @@ package actor
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"os"
 	"os/signal"
 	"sync"
 	"syscall"
+)
+
+var (
+	ActorNotFoundErr = errors.New("actor not found")
 )
 
 type Postman struct {
@@ -62,6 +67,18 @@ func DispatchMessage(msg Message) {
 		actor.Inbox(msg)
 	} else {
 		slog.Error("actor not found", slog.String("actor-address", msg.To.String()))
+	}
+}
+
+func DispatchMessageSync(msg Message) (Message, error) {
+	p := GetPostman()
+	actor := p.actors[msg.To.String()]
+	if actor != nil {
+		slog.Debug("actor found, sending and waiting msg", slog.String("msg", msg.String()))
+		return actor.InboxWithReturn(msg)
+	} else {
+		slog.Error("actor not found", slog.String("actor-address", msg.To.String()))
+		return Message{}, ActorNotFoundErr
 	}
 }
 

@@ -48,6 +48,10 @@ func (this *ProductsState) Shutdown() {
 	slog.Info("clean all product")
 }
 
+func (this *ProductsState) ProcessSync(msg actor.Message) actor.Message {
+	return actor.Message{}
+}
+
 type AddProductMsg struct {
 	Product Product
 }

@@ -26,7 +26,7 @@ func TestDispatcher(t *testing.T) {
 	actor.RegisterActor(b)
 	assert.Equal(t, 2, actor.NumActors())
 
-	var re actor.ThirdEvent = "three"
+	var re actor.ThirdMessage = "three"
 	msg := actor.Message{
 		From: *a.GetAddress(),
 		To:   *b.GetAddress(),
