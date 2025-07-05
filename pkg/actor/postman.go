@@ -53,24 +53,35 @@ func (this *Postman) GetContext() context.Context {
 }
 
 func RegisterActor(actor *Actor) {
-	slog.Info("register an actor", slog.Any("a", actor))
+	if actor == nil {
+		slog.Error("nil actor cant be register")
+		return
+	}
+
+	slog.Info("register an actor", slog.String("a", actor.GetAddress().String()))
 	p := GetPostman()
 	p.actors[actor.GetAddress().String()] = actor
 	actor.Activate()
 }
 
-func DispatchMessage(msg Message) {
+func DispatchMessage(msg Message) error {
 	p := GetPostman()
 	actor := p.actors[msg.To.String()]
 	if actor != nil {
-		slog.Debug("actor found, sending msg", slog.String("actor-address", actor.GetAddress().String()), slog.String("to", msg.To.String()))
-		actor.Inbox(msg)
+		slog.Debug("actor found, sending msg", slog.String("actor-address", msg.To.String()))
+		err := actor.Inbox(msg)
+		if err != nil {
+			slog.Error("actor inbox error", slog.String("actor-address", msg.To.String()), slog.String("error", err.Error()))
+			return err
+		}
+		return nil
 	} else {
 		slog.Error("actor not found", slog.String("actor-address", msg.To.String()))
+		return ActorNotFoundErr
 	}
 }
 
-func DispatchMessageSync(msg Message) (Message, error) {
+func DispatchMessageWithReturn(msg Message) (Message, error) {
 	p := GetPostman()
 	actor := p.actors[msg.To.String()]
 	if actor != nil {

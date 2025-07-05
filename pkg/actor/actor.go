@@ -76,7 +76,7 @@ func (this *Actor) InboxWithReturn(msg Message) (Message, error) {
 		return Message{}, InboxClosedErr
 	}
 	pr := this.GetMessageProcessor()
-	return pr.ProcessSync(msg), nil
+	return pr.ProcessSync(msg)
 }
 
 func (this *Actor) Send(msg Message) {
