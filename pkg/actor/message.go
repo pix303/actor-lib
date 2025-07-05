@@ -3,9 +3,21 @@ package actor
 import "fmt"
 
 type Message struct {
-	From Address
-	To   Address
+	From *Address
+	To   *Address
 	Body any
+}
+
+func EmptyMessage() Message {
+	return Message{}
+}
+
+func NewMessage(to *Address, from *Address, body any) Message {
+	return Message{
+		To:   to,
+		From: from,
+		Body: body,
+	}
 }
 
 func (this *Message) String() string {
