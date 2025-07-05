@@ -1,7 +1,6 @@
 package actor_test
 
 import (
-	"log/slog"
 	"testing"
 	"time"
 
@@ -10,7 +9,6 @@ import (
 )
 
 func TestDispatcher(t *testing.T) {
-	slog.Info("---- start test dispa")
 	actor.Shutdown()
 	p := actor.GetPostman()
 	assert.NotNil(t, p)
@@ -28,8 +26,8 @@ func TestDispatcher(t *testing.T) {
 
 	var re actor.ThirdMessage = "three"
 	msg := actor.Message{
-		From: *a.GetAddress(),
-		To:   *b.GetAddress(),
+		From: a.GetAddress(),
+		To:   b.GetAddress(),
 		Body: re,
 	}
 
@@ -42,8 +40,17 @@ func TestDispatcher(t *testing.T) {
 	assert.Contains(t, bstate.Data, "three")
 	assert.Contains(t, astate.Data, "return msg")
 
-	assert.Equal(t, actor.NumActors(), 2)
+	var returnMsgBody actor.WithSyncResponse = "wait response"
+	rm := actor.Message{
+		From: a.GetAddress(),
+		To:   a.GetAddress(),
+		Body: returnMsgBody,
+	}
+	returnMsg, err := actor.DispatchMessageWithReturn(rm)
+	assert.Nil(t, err)
+	assert.Contains(t, returnMsg.Body, "message recived")
+
+	assert.Equal(t, 2, actor.NumActors())
 	actor.Shutdown()
-	assert.Equal(t, actor.NumActors(), 0)
-	slog.Info("---- end test dispa")
+	assert.Equal(t, 0, actor.NumActors())
 }

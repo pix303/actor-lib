@@ -12,7 +12,7 @@ type TestProcessorState struct {
 type FirstMessage string
 type SecondMessage string
 type ThirdMessage string
-type ReturnMessage string
+type TestReturnMessage string
 type WithSyncResponse string
 type Response string
 
@@ -26,38 +26,38 @@ func (this *TestProcessorState) Process(inbox chan Message) {
 			this.Data = fmt.Sprintf("processed with second event: %s", msg.Body)
 		case ThirdMessage:
 			this.Data = fmt.Sprintf("processed with third event: %s", msg.Body)
-			var r ReturnMessage = "return msg"
+			var r TestReturnMessage = "return msg"
 			rmsg := Message{
 				From: msg.To,
 				To:   msg.From,
 				Body: r,
 			}
 			DispatchMessage(rmsg)
-		case ReturnMessage:
+		case TestReturnMessage:
 			this.Data = fmt.Sprintf("processed with return event: %s", msg.Body)
 		}
 	}
 }
 
-func (this *TestProcessorState) ProcessSync(msg Message) Message {
+func (this *TestProcessorState) ProcessSync(msg Message) (Message, error) {
 
 	switch msg.Body.(type) {
 	case WithSyncResponse:
 		this.Data = fmt.Sprintf("processed with sync message: %s", msg.Body)
 		var rm = Message{
 			To:   msg.From,
-			From: *NewAddress("local", "me"),
+			From: NewAddress("local", "me"),
 			Body: "message recived",
 		}
-		return rm
+		return rm, nil
 
 	default:
 		var em = Message{
 			To:   msg.From,
-			From: *NewAddress("local", "me"),
+			From: NewAddress("local", "me"),
 			Body: "empty message",
 		}
-		return em
+		return em, nil
 	}
 }
 

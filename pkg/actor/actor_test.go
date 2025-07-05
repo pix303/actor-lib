@@ -1,7 +1,6 @@
 package actor_test
 
 import (
-	"log/slog"
 	"testing"
 	"time"
 
@@ -10,7 +9,6 @@ import (
 )
 
 func TestActor(t *testing.T) {
-	slog.Info("---- start test actor")
 	toPID, fromPID := actor.GenerateAddressForTest("test")
 
 	a := actor.GenerateActorForTest("test")
@@ -21,7 +19,7 @@ func TestActor(t *testing.T) {
 	actor.RegisterActor(a)
 
 	var firstEvent actor.FirstMessage = "one"
-	a.Send(actor.Message{To: *toPID, From: *fromPID, Body: firstEvent})
+	a.Send(actor.Message{To: toPID, From: fromPID, Body: firstEvent})
 	<-time.After(time.Millisecond * 10)
 	assert.Contains(t, a.GetAddress().String(), "test-sender")
 	assert.Contains(t, state.Data, "first event")
@@ -31,25 +29,25 @@ func TestActor(t *testing.T) {
 
 	assert.True(t, a.IsClosed())
 	var secondEvent actor.SecondMessage = "two"
-	a.Send(actor.Message{To: *toPID, From: *fromPID, Body: secondEvent})
+	a.Send(actor.Message{To: toPID, From: fromPID, Body: secondEvent})
 	<-time.After(time.Millisecond * 10)
 	assert.Contains(t, state.Data, "first event")
 
 	a.Activate()
 
 	assert.False(t, a.IsClosed())
-	a.Send(actor.Message{To: *toPID, From: *fromPID, Body: secondEvent})
+	a.Send(actor.Message{To: toPID, From: fromPID, Body: secondEvent})
 	<-time.After(time.Millisecond * 10)
 	assert.Contains(t, state.Data, "second event")
 	assert.Contains(t, state.Data, "two")
 
 	var wrb actor.WithSyncResponse = "with response message"
 	withResponse := actor.Message{
-		From: *fromPID,
-		To:   *toPID,
+		From: fromPID,
+		To:   toPID,
 		Body: wrb,
 	}
-	resp, err := actor.DispatchMessageSync(withResponse)
+	resp, err := actor.DispatchMessageWithReturn(withResponse)
 	assert.Nil(t, err)
 	assert.Contains(t, resp.Body, "recived")
 
@@ -59,5 +57,4 @@ func TestActor(t *testing.T) {
 
 	actor.Shutdown()
 	assert.Equal(t, 0, actor.NumActors())
-	slog.Info("---- end test actor")
 }
