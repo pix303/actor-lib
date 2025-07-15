@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -72,32 +71,6 @@ func (this *ProductsState) Shutdown() {
 	slog.Info("all product cleaned")
 }
 
-func (this *ProductsState) ProcessSync(msg actor.Message) (actor.Message, error) {
-	switch msg.Body.(type) {
-	case CheckStoreRefillProductMsg:
-		ps := make([]Product, 0)
-		for _, p := range this.products {
-			if p.Quantity < 2 {
-				slog.Warn("product on adding ", slog.Any("product", p))
-				ps = append(ps, p)
-			}
-		}
-		slog.Warn("products check returned", slog.Any("products", ps))
-		rm := actor.NewMessage(
-			msg.To,
-			msg.From,
-			ReturnStoreRefillReportMsg{
-				Products: ps,
-			},
-		)
-		slog.Warn("processed in sync and now return", slog.String("msg", msg.String()))
-		return rm, nil
-	default:
-		slog.Warn("this msg is unknown for sync processing", slog.String("msg", msg.String()))
-	}
-	return actor.EmptyMessage(), errors.New("no message to process")
-}
-
 type AddProductMsg struct {
 	Product Product
 }
@@ -132,33 +105,35 @@ func main() {
 	}
 
 	actor.RegisterActor(&productActor)
-	msg := actor.Message{
-		From: actor.NewAddress("local", "product"),
-		To:   actor.NewAddress("local", "product"),
-		Body: AddProductMsg{Product{Code: "ciao", Quantity: 4}},
-	}
-	msg2 := actor.Message{
-		From: actor.NewAddress("local", "product"),
-		To:   actor.NewAddress("local", "product"),
-		Body: AddQuantityProductMsg{Product{Code: "ciao", Quantity: 14}},
-	}
-	msg3 := actor.Message{
-		From: actor.NewAddress("local", "product"),
-		To:   actor.NewAddress("local", "product"),
-		Body: RemoveQuantityProductMsg{Product{Code: "ciao", Quantity: 14}},
-	}
-	msg4 := actor.Message{
-		From: actor.NewAddress("local", "product"),
-		To:   actor.NewAddress("local", "product"),
-		Body: CheckStoreRefillProductMsg{},
-	}
-	actor.DispatchMessage(msg)
-	actor.DispatchMessage(msg2)
-	actor.DispatchMessage(msg3)
-	actor.DispatchMessage(msg3)
+	msg := actor.NewMessage(
+		actor.NewAddress("local", "product"),
+		actor.NewAddress("local", "product"),
+		AddProductMsg{Product{Code: "ciao", Quantity: 4}},
+		nil,
+	)
+	msg2 := actor.NewMessage(
+		actor.NewAddress("local", "product"),
+		actor.NewAddress("local", "product"),
+		AddQuantityProductMsg{Product{Code: "ciao", Quantity: 14}},
+		nil,
+	)
+	msg3 := actor.NewMessage(
+		actor.NewAddress("local", "product"),
+		actor.NewAddress("local", "product"),
+		RemoveQuantityProductMsg{Product{Code: "ciao", Quantity: 14}},
+		nil,
+	)
+	msg4 := actor.NewMessage(
+		actor.NewAddress("local", "product"),
+		actor.NewAddress("local", "product"),
+		CheckStoreRefillProductMsg{},
+		nil,
+	)
+	actor.SendMessage(msg)
+	actor.SendMessage(msg2)
+	actor.SendMessage(msg3)
+	actor.SendMessage(msg4)
 
 	<-time.After(2 * time.Second)
-
-	rm, err := actor.DispatchMessageWithReturn(msg4)
-	slog.Info("end", slog.Any("rm", rm.Body.(ReturnStoreRefillReportMsg).Products[0]))
+	fmt.Println()
 }

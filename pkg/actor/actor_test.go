@@ -41,16 +41,6 @@ func TestActor(t *testing.T) {
 	assert.Contains(t, state.Data, "second event")
 	assert.Contains(t, state.Data, "two")
 
-	var wrb actor.WithSyncResponse = "with response message"
-	withResponse := actor.Message{
-		From: fromPID,
-		To:   toPID,
-		Body: wrb,
-	}
-	resp, err := actor.DispatchMessageWithReturn(withResponse)
-	assert.Nil(t, err)
-	assert.Contains(t, resp.Body, "recived")
-
 	a.Drop()
 	assert.Nil(t, a.GetAddress())
 	assert.Nil(t, a.GetMessageProcessor())

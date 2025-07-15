@@ -25,14 +25,15 @@ func TestDispatcher(t *testing.T) {
 	assert.Equal(t, 2, actor.NumActors())
 
 	var re actor.ThirdMessage = "three"
-	msg := actor.Message{
-		From: a.GetAddress(),
-		To:   b.GetAddress(),
-		Body: re,
-	}
+	msg := actor.NewMessage(
+		b.GetAddress(),
+		a.GetAddress(),
+		re,
+		nil,
+	)
 
 	a.Send(msg)
-	<-time.After(time.Millisecond * 300)
+	<-time.After(time.Millisecond * 100)
 
 	astate := a.GetMessageProcessor().(*actor.TestProcessorState)
 	bstate := b.GetMessageProcessor().(*actor.TestProcessorState)
@@ -41,14 +42,20 @@ func TestDispatcher(t *testing.T) {
 	assert.Contains(t, astate.Data, "return msg")
 
 	var returnMsgBody actor.WithSyncResponse = "wait response"
-	rm := actor.Message{
-		From: a.GetAddress(),
-		To:   a.GetAddress(),
-		Body: returnMsgBody,
-	}
-	returnMsg, err := actor.DispatchMessageWithReturn(rm)
-	assert.Nil(t, err)
-	assert.Contains(t, returnMsg.Body, "message recived")
+	withReturnMessage := actor.NewMessage(
+		b.GetAddress(),
+		a.GetAddress(),
+		returnMsgBody,
+		a.MessageBox,
+	)
+
+	a.Send(withReturnMessage)
+	<-time.After(time.Millisecond * 200)
+
+	astate = a.GetMessageProcessor().(*actor.TestProcessorState)
+	bstate = b.GetMessageProcessor().(*actor.TestProcessorState)
+	assert.Contains(t, bstate.Data, "wait response")
+	assert.Contains(t, astate.Data, "message recived")
 
 	assert.Equal(t, 2, actor.NumActors())
 	actor.Shutdown()

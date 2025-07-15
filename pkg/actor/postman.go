@@ -64,9 +64,10 @@ func RegisterActor(actor *Actor) {
 	actor.Activate()
 }
 
-func DispatchMessage(msg Message) error {
+func SendMessage(msg Message) error {
 	p := GetPostman()
 	actor := p.actors[msg.To.String()]
+
 	if actor != nil {
 		slog.Debug("actor found, sending msg", slog.String("actor-address", msg.To.String()))
 		err := actor.Inbox(msg)
@@ -81,15 +82,10 @@ func DispatchMessage(msg Message) error {
 	}
 }
 
-func DispatchMessageWithReturn(msg Message) (Message, error) {
+func BroadcastMessage(msg Message) {
 	p := GetPostman()
-	actor := p.actors[msg.To.String()]
-	if actor != nil {
-		slog.Debug("actor found, sending and waiting msg", slog.String("msg", msg.String()))
-		return actor.InboxWithReturn(msg)
-	} else {
-		slog.Error("actor not found", slog.String("actor-address", msg.To.String()))
-		return Message{}, ActorNotFoundErr
+	for _, a := range p.actors {
+		a.Inbox(msg)
 	}
 }
 

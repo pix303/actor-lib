@@ -19,6 +19,7 @@ type Response string
 func (this *TestProcessorState) Process(inbox chan Message) {
 	for {
 		msg := <-inbox
+		slog.Info("processing msg", slog.String("masg", msg.String()))
 		switch msg.Body.(type) {
 		case FirstMessage:
 			this.Data = fmt.Sprintf("processed with first event: %s", msg.Body)
@@ -32,32 +33,24 @@ func (this *TestProcessorState) Process(inbox chan Message) {
 				To:   msg.From,
 				Body: r,
 			}
-			DispatchMessage(rmsg)
+			SendMessage(rmsg)
 		case TestReturnMessage:
 			this.Data = fmt.Sprintf("processed with return event: %s", msg.Body)
+		case WithSyncResponse:
+			this.Data = fmt.Sprintf("processed with sync message: %s", msg.Body)
+			var returnBody Response = "message recived"
+			var rm = NewMessage(
+				msg.From,
+				NewAddress("local", "me"),
+				returnBody,
+				nil,
+			)
+			if msg.WithReturn != nil {
+				msg.WithReturn <- rm
+			}
+		case Response:
+			this.Data = fmt.Sprintf("processed with sync message: %s", msg.Body)
 		}
-	}
-}
-
-func (this *TestProcessorState) ProcessSync(msg Message) (Message, error) {
-
-	switch msg.Body.(type) {
-	case WithSyncResponse:
-		this.Data = fmt.Sprintf("processed with sync message: %s", msg.Body)
-		var rm = Message{
-			To:   msg.From,
-			From: NewAddress("local", "me"),
-			Body: "message recived",
-		}
-		return rm, nil
-
-	default:
-		var em = Message{
-			To:   msg.From,
-			From: NewAddress("local", "me"),
-			Body: "empty message",
-		}
-		return em, nil
 	}
 }
 

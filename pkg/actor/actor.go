@@ -13,22 +13,20 @@ var (
 
 type Actor struct {
 	address          *Address
-	inbox            chan Message
-	withReturn       bool
+	MessageBox       chan Message
 	isClosed         bool
 	messageProcessor MessageProcessor
 	postman          *Postman
 }
 
 func NewActor(address *Address, processor MessageProcessor) (Actor, error) {
-	inbox := make(chan Message, 100)
 	if address == nil {
 		return Actor{}, AddressNilErr
 	}
 	return Actor{
 		address:          address,
 		messageProcessor: processor,
-		inbox:            inbox,
+		MessageBox:       make(chan Message, 100),
 		isClosed:         true,
 	}, nil
 }
@@ -39,7 +37,7 @@ func (this *Actor) Activate() {
 		this.isClosed = false
 		p := this.GetMessageProcessor()
 		if p != nil {
-			go p.Process(this.inbox)
+			go p.Process(this.MessageBox)
 		}
 	}
 }
@@ -67,20 +65,12 @@ func (this *Actor) Inbox(msg Message) error {
 	if this.isClosed {
 		return InboxClosedErr
 	}
-	this.inbox <- msg
+	this.MessageBox <- msg
 	return nil
 }
 
-func (this *Actor) InboxWithReturn(msg Message) (Message, error) {
-	if this.isClosed {
-		return Message{}, InboxClosedErr
-	}
-	pr := this.GetMessageProcessor()
-	return pr.ProcessSync(msg)
-}
-
 func (this *Actor) Send(msg Message) {
-	DispatchMessage(msg)
+	SendMessage(msg)
 }
 
 func (this *Actor) Drop() {
@@ -91,7 +81,7 @@ func (this *Actor) Drop() {
 	this.Deactivate()
 	this.address = nil
 	this.messageProcessor = nil
-	this.inbox = nil
+	this.MessageBox = nil
 	this.postman = nil
 }
 

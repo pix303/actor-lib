@@ -3,20 +3,22 @@ package actor
 import "fmt"
 
 type Message struct {
-	From *Address
-	To   *Address
-	Body any
+	From       *Address
+	To         *Address
+	Body       any
+	WithReturn chan<- Message
 }
 
 func EmptyMessage() Message {
 	return Message{}
 }
 
-func NewMessage(to *Address, from *Address, body any) Message {
+func NewMessage(to *Address, from *Address, body any, withReturn chan<- Message) Message {
 	return Message{
-		To:   to,
-		From: from,
-		Body: body,
+		To:         to,
+		From:       from,
+		Body:       body,
+		WithReturn: withReturn,
 	}
 }
 
