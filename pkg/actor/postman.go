@@ -89,6 +89,10 @@ func BroadcastMessage(msg Message) {
 	}
 }
 
+func Subcribe(msg Message) {
+	SendMessage(msg)
+}
+
 func Shutdown() {
 	p := GetPostman()
 	for _, a := range p.actors {

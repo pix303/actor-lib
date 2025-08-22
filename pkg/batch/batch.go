@@ -9,46 +9,51 @@ import (
 )
 
 type Batcher struct {
-	messages       []actor.Message
-	maxNumMessages uint
-	timeout        time.Duration
-	timer          *time.Timer
-	mutex          sync.Mutex
-	actorReciver   *actor.Actor
+	messages         []actor.Message
+	maxNumMessages   uint
+	timeout          time.Duration
+	timer            *time.Timer
+	mutex            sync.Mutex
+	processMessageFn func(actor.Message)
 }
 
-func NewBatcher(timeoutMs uint, maxMessages uint, actorReciver *actor.Actor) *Batcher {
+func NewBatcher(timeoutMs uint, maxMessages uint, fn func(msg actor.Message)) *Batcher {
 	b := Batcher{
-		timeout:        time.Duration(timeoutMs) * time.Millisecond,
-		messages:       make([]actor.Message, 0),
-		mutex:          sync.Mutex{},
-		maxNumMessages: maxMessages,
-		actorReciver:   actorReciver,
+		timeout:          time.Duration(timeoutMs) * time.Millisecond,
+		messages:         make([]actor.Message, 0),
+		mutex:            sync.Mutex{},
+		maxNumMessages:   maxMessages,
+		processMessageFn: fn,
 	}
 	slog.Info("Batcher created", "timeout", timeoutMs, "maxMessages", maxMessages)
 	return &b
 }
 
-func (this *Batcher) Add(msg actor.Message) {
-	this.mutex.Lock()
-	defer this.mutex.Unlock()
+func (batcher *Batcher) Add(msg actor.Message) {
+	batcher.mutex.Lock()
+	defer batcher.mutex.Unlock()
 
-	if len(this.messages) == 0 {
-		this.timer = time.AfterFunc(this.timeout, this.process)
+	if len(batcher.messages) == 0 {
+		batcher.timer = time.AfterFunc(batcher.timeout, batcher.process)
 	}
 
-	this.messages = append(this.messages, msg)
-	if len(this.messages) == int(this.maxNumMessages) {
-		this.process()
+	batcher.messages = append(batcher.messages, msg)
+	slog.Info("batch msg added", slog.Int("totalMsg", len(batcher.messages)))
+	if len(batcher.messages) == int(batcher.maxNumMessages) {
+		batcher.process()
 	}
 }
 
-func (this *Batcher) process() {
-	for _, x := range this.messages {
-		this.actorReciver.Inbox(x)
+func (batcher *Batcher) process() {
+	slog.Info("batch process start")
+	for _, msg := range batcher.messages {
+		batcher.processMessageFn(msg)
 	}
-
-	this.timer.Stop()
-	this.messages = make([]actor.Message, 0)
+	batcher.Stop()
 	slog.Info("batch process end")
+}
+
+func (batcher *Batcher) Stop() {
+	batcher.timer.Stop()
+	batcher.messages = make([]actor.Message, 0)
 }

@@ -9,9 +9,7 @@ type Message struct {
 	WithReturn chan<- Message
 }
 
-func EmptyMessage() Message {
-	return Message{}
-}
+var EmptyMessage = Message{}
 
 func NewMessage(to *Address, from *Address, body any, withReturn chan<- Message) Message {
 	return Message{
@@ -19,6 +17,33 @@ func NewMessage(to *Address, from *Address, body any, withReturn chan<- Message)
 		From:       from,
 		Body:       body,
 		WithReturn: withReturn,
+	}
+}
+
+type AddSubscriptionMessageBody struct{}
+
+func NewAddSubcriptionMessage(subscriberAddress *Address, notifierAddress *Address) Message {
+	return Message{
+		From: subscriberAddress,
+		To:   notifierAddress,
+		Body: AddSubscriptionMessageBody{},
+	}
+}
+
+type RemoveSubscriptionMessageBody struct{}
+
+func NewRemoveSubscriptionMessage(subscriberAddress *Address, notifierAddress *Address) Message {
+	return Message{
+		From: subscriberAddress,
+		To:   notifierAddress,
+		Body: RemoveSubscriptionMessageBody{},
+	}
+}
+
+func NewSubscribersMessage(from *Address, body any) Message {
+	return Message{
+		From: from,
+		Body: body,
 	}
 }
 

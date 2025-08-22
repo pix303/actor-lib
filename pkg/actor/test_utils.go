@@ -16,7 +16,7 @@ type TestReturnMessage string
 type WithSyncResponse string
 type Response string
 
-func (this *TestProcessorState) Process(inbox chan Message) {
+func (this *TestProcessorState) Process(inbox <-chan Message) {
 	for {
 		msg := <-inbox
 		slog.Info("processing msg", slog.String("masg", msg.String()))

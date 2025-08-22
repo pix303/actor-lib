@@ -28,7 +28,7 @@ func (this *ProductsState) getProduct(code string) *Product {
 	return nil
 }
 
-func (this *ProductsState) Process(inbox chan actor.Message) {
+func (this *ProductsState) Process(inbox <-chan actor.Message) {
 	for {
 		msg := <-inbox
 		switch paylaod := msg.Body.(type) {
