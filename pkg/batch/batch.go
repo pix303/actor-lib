@@ -17,7 +17,9 @@ type Batcher struct {
 	processMessageFn func(actor.Message)
 }
 
-func NewBatcher(timeoutMs uint, maxMessages uint, fn func(msg actor.Message)) *Batcher {
+type MessageProcessHandler = func(msg actor.Message)
+
+func NewBatcher(timeoutMs uint, maxMessages uint, fn MessageProcessHandler) *Batcher {
 	b := Batcher{
 		timeout:          time.Duration(timeoutMs) * time.Millisecond,
 		messages:         make([]actor.Message, 0),
