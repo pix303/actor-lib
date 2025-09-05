@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pix303/actor-lib/pkg/actor"
-	"github.com/pix303/actor-lib/pkg/batch"
+	"github.com/pix303/cinecity/pkg/actor"
+	"github.com/pix303/cinecity/pkg/batch"
 	"github.com/stretchr/testify/assert"
 )
 

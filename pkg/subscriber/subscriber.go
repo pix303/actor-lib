@@ -3,7 +3,7 @@ package subscriber
 import (
 	"log/slog"
 
-	"github.com/pix303/actor-lib/pkg/actor"
+	"github.com/pix303/cinecity/pkg/actor"
 )
 
 type SubscriptionsState struct {

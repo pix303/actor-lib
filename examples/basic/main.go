@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/pix303/actor-lib/pkg/actor"
+	"github.com/pix303/cinecity/pkg/actor"
 )
 
 type Product struct {
