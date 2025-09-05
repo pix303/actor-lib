@@ -1,6 +1,10 @@
 package subscriber
 
-import "github.com/pix303/actor-lib/pkg/actor"
+import (
+	"log/slog"
+
+	"github.com/pix303/actor-lib/pkg/actor"
+)
 
 type Subscribable interface {
 	AddSubscription(subscriberAddress *actor.Address)
@@ -17,21 +21,22 @@ func NewSubscribeState() *SubscriptionsState {
 	}
 }
 
-func (this *SubscriptionsState) AddSubscription(subscriberAddress *actor.Address) {
-	this.subscribers = append(this.subscribers, subscriberAddress)
+func (state *SubscriptionsState) AddSubscription(subscriberAddress *actor.Address) {
+	state.subscribers = append(state.subscribers, subscriberAddress)
 }
 
-func (this *SubscriptionsState) RemoveSubscription(subscriberAddress *actor.Address) {
-	for i, v := range this.subscribers {
+func (state *SubscriptionsState) RemoveSubscription(subscriberAddress *actor.Address) {
+	for i, v := range state.subscribers {
 		if v.IsEqual(subscriberAddress) {
-			this.subscribers = append(this.subscribers[:i], this.subscribers[i+1:]...)
+			state.subscribers = append(state.subscribers[:i], state.subscribers[i+1:]...)
 		}
 	}
 }
 
-func (this *SubscriptionsState) NotifySubscribers(msg actor.Message) {
-	for _, sub := range this.subscribers {
+func (state *SubscriptionsState) NotifySubscribers(msg actor.Message) {
+	for _, sub := range state.subscribers {
 		msg.To = sub
-		actor.SendMessage(msg)
+		err := actor.SendMessage(msg)
+		slog.Warn("error on send msg to subscribers", slog.String("msg", msg.String()), slog.String("err", err.Error()))
 	}
 }
