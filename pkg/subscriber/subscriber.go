@@ -6,11 +6,6 @@ import (
 	"github.com/pix303/actor-lib/pkg/actor"
 )
 
-type Subscribable interface {
-	AddSubscription(subscriberAddress *actor.Address)
-	NotifySubscribers(msg actor.Message)
-}
-
 type SubscriptionsState struct {
 	subscribers []*actor.Address
 }
