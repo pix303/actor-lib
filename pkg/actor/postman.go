@@ -11,7 +11,9 @@ import (
 )
 
 var (
-	ErrActorNotFound = errors.New("actor not found")
+	ErrActorNotFound                 = errors.New("actor not found")
+	ErrActorAddressAlreadyRegistered = errors.New("actor address already registered")
+	ErrActorAddressCanNotBeNull      = errors.New("actor address ")
 )
 
 type Postman struct {
@@ -48,20 +50,26 @@ func GetPostman() *Postman {
 	return &instance
 }
 
-func (this *Postman) GetContext() context.Context {
-	return this.context
+func (postman *Postman) GetContext() context.Context {
+	return postman.context
 }
 
-func RegisterActor(actor *Actor) {
+func RegisterActor(actor *Actor) error {
 	if actor == nil {
 		slog.Error("nil actor cant be register")
-		return
+		return ErrActorAddressCanNotBeNull
 	}
 
-	slog.Info("register an actor", slog.String("a", actor.GetAddress().String()))
 	p := GetPostman()
+	if temp := p.actors[actor.GetAddress().String()]; temp != nil {
+		slog.Error(ErrActorAddressAlreadyRegistered.Error(), slog.String("actor-address", actor.GetAddress().String()))
+		return ErrActorAddressAlreadyRegistered
+	}
+	//p.actors = append(p.actors, actor) // TODO: check if actor already exists []
 	p.actors[actor.GetAddress().String()] = actor
+	slog.Info("actor registered", slog.String("a", actor.GetAddress().String()))
 	actor.Activate()
+	return nil
 }
 
 func SendMessage(msg Message) error {

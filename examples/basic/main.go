@@ -109,7 +109,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	actor.RegisterActor(&productActor)
+	err = actor.RegisterActor(&productActor)
+	if err != nil {
+		os.Exit(1)
+	}
+
 	msg := actor.NewMessage(
 		actor.NewAddress("local", "product"),
 		actor.NewAddress("local", "product"),
