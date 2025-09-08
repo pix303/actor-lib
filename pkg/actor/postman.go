@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	ActorNotFoundErr = errors.New("actor not found")
+	ErrActorNotFound = errors.New("actor not found")
 )
 
 type Postman struct {
@@ -78,7 +78,7 @@ func SendMessage(msg Message) error {
 		return nil
 	} else {
 		slog.Error("actor not found", slog.String("actor-address", msg.To.String()))
-		return ActorNotFoundErr
+		return ErrActorNotFound
 	}
 }
 
