@@ -13,3 +13,5 @@ An Actor can:
 - Subscribe for future message of an actor
 - Create new actors
 
+An Actor is composed by:
+- an address defined by an area and an id

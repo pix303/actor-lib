@@ -31,7 +31,10 @@ func (state *SubscriptionsState) RemoveSubscription(subscriberAddress *actor.Add
 func (state *SubscriptionsState) NotifySubscribers(msg actor.Message) {
 	for _, sub := range state.subscribers {
 		msg.To = sub
+		slog.Info("sending msg to subscriber", slog.String("msg", msg.String()), slog.String("subscriber", sub.String()))
 		err := actor.SendMessage(msg)
-		slog.Warn("error on send msg to subscribers", slog.String("msg", msg.String()), slog.String("err", err.Error()))
+		if err != nil {
+			slog.Warn("error on send msg to subscribers", slog.String("msg", msg.String()), slog.String("err", err.Error()))
+		}
 	}
 }
