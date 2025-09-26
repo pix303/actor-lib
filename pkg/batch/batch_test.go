@@ -6,15 +6,14 @@ import (
 	"time"
 
 	"github.com/pix303/cinecity/pkg/actor"
+	"github.com/pix303/cinecity/pkg/actor_test"
 	"github.com/pix303/cinecity/pkg/batch"
 	"github.com/stretchr/testify/assert"
 )
 
 func setup() (msg1 actor.Message, msg2 actor.Message, actor1 *actor.Actor, handler func(msg actor.Message)) {
 
-	to, from := actor.GenerateAddressForTest("test")
-
-	var msg1Body actor.FirstMessage = "hello"
+	var msg1Body actor_test.FirstMessage = "hello"
 	msg1 = actor.NewMessage(
 		from,
 		to,

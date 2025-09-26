@@ -1,6 +1,7 @@
 package actor
 
-type MessageProcessor interface {
-	Process(inbox <-chan Message)
+type StateProcessor interface {
+	Process(msg Message)
 	Shutdown()
+	GetState() any
 }

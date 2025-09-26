@@ -13,8 +13,8 @@ func TestDispatcher(t *testing.T) {
 	p := actor.GetPostman()
 	assert.NotNil(t, p)
 
-	a := actor.GenerateActorForTest("A")
-	b := actor.GenerateActorForTest("B")
+	a := GenerateActorForTest("A")
+	b := GenerateActorForTest("B")
 	a.Activate()
 	b.Activate()
 	assert.Contains(t, a.GetAddress().String(), "A-sender")
@@ -24,36 +24,22 @@ func TestDispatcher(t *testing.T) {
 	actor.RegisterActor(b)
 	assert.Equal(t, 2, actor.NumActors())
 
-	var re actor.ThirdMessage = "three"
-	msg := actor.NewMessage(
-		b.GetAddress(),
-		a.GetAddress(),
-		re,
-		nil,
-	)
-
-	a.Send(msg)
+	var re ThirdMessage = "three"
+	a.Send(re, a.GetAddress(), nil)
 	<-time.After(time.Millisecond * 100)
 
-	astate := a.GetMessageProcessor().(*actor.TestProcessorState)
-	bstate := b.GetMessageProcessor().(*actor.TestProcessorState)
+	astate := a.GetMessageProcessor().(*TestProcessorState)
+	bstate := b.GetMessageProcessor().(*TestProcessorState)
 
 	assert.Contains(t, bstate.Data, "three")
 	assert.Contains(t, astate.Data, "return msg")
 
-	var returnMsgBody actor.WithSyncResponse = "wait response"
-	withReturnMessage := actor.NewMessage(
-		b.GetAddress(),
-		a.GetAddress(),
-		returnMsgBody,
-		a.MessageBox,
-	)
-
-	a.Send(withReturnMessage)
+	var returnMsgBody WithSyncResponse = "wait response"
+	a.InboxAndWaitResponse(returnMsgBody, b.GetAddress())
 	<-time.After(time.Millisecond * 200)
 
-	astate = a.GetMessageProcessor().(*actor.TestProcessorState)
-	bstate = b.GetMessageProcessor().(*actor.TestProcessorState)
+	astate = a.GetMessageProcessor().(*TestProcessorState)
+	bstate = b.GetMessageProcessor().(*TestProcessorState)
 	assert.Contains(t, bstate.Data, "wait response")
 	assert.Contains(t, astate.Data, "message recived")
 

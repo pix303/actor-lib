@@ -6,18 +6,33 @@ type Message struct {
 	From       *Address
 	To         *Address
 	Body       any
-	WithReturn chan<- Message
+	WithReturn bool
+	ReturnChan chan WrappedMessage
 }
 
 var EmptyMessage = Message{}
 
-func NewMessage(to *Address, from *Address, body any, withReturn chan<- Message) Message {
+func NewMessage(to *Address, from *Address, body any, withReturn bool) Message {
+	var c chan WrappedMessage
+	if withReturn {
+		c = make(chan WrappedMessage, 1)
+	}
 	return Message{
 		To:         to,
 		From:       from,
 		Body:       body,
 		WithReturn: withReturn,
+		ReturnChan: c,
 	}
+}
+
+type WrappedMessage struct {
+	Message *Message
+	Err     error
+}
+
+func NewWrappedMessage(msg *Message, err error) WrappedMessage {
+	return WrappedMessage{msg, err}
 }
 
 type AddSubscriptionMessageBody struct{}

@@ -65,40 +65,63 @@ func RegisterActor(actor *Actor) error {
 		slog.Error(ErrActorAddressAlreadyRegistered.Error(), slog.String("actor-address", actor.GetAddress().String()))
 		return ErrActorAddressAlreadyRegistered
 	}
-	//p.actors = append(p.actors, actor) // TODO: check if actor already exists []
+
 	p.actors[actor.GetAddress().String()] = actor
 	slog.Info("actor registered", slog.String("a", actor.GetAddress().String()))
 	actor.Activate()
 	return nil
 }
 
+func UnRegisterActor(address *Address) {
+	p := GetPostman()
+	delete(p.actors, address.String())
+}
+
 func SendMessage(msg Message) error {
 	p := GetPostman()
 	actor := p.actors[msg.To.String()]
 
-	if actor != nil {
-		slog.Debug("actor found, sending msg", slog.String("actor-address", msg.To.String()))
-		err := actor.Inbox(msg)
-		if err != nil {
-			slog.Error("actor inbox error", slog.String("actor-address", msg.To.String()), slog.String("error", err.Error()))
-			return err
-		}
-		return nil
-	} else {
+	if actor == nil {
 		slog.Error("actor not found", slog.String("actor-address", msg.To.String()))
 		return ErrActorNotFound
 	}
+
+	slog.Debug("actor found, sending msg", slog.String("actor-address", msg.To.String()))
+	err := actor.Inbox(msg)
+	if err != nil {
+		slog.Error("actor inbox error", slog.String("actor-address", msg.To.String()), slog.String("error", err.Error()))
+		return err
+	}
+	return nil
+}
+
+func SendMessageWithResponse(msg Message) (Message, error) {
+	p := GetPostman()
+	actor := p.actors[msg.To.String()]
+	if actor == nil {
+		slog.Error("actor not found", slog.String("actor-address", msg.To.String()))
+		return Message{}, ErrActorNotFound
+	}
+
+	returnMsg, err := actor.InboxAndWaitResponse(msg)
+	if err != nil {
+		slog.Error("actor inbox error", slog.String("actor-address", msg.To.String()), slog.String("error", err.Error()))
+	}
+	return returnMsg, err
 }
 
 func BroadcastMessage(msg Message) {
 	p := GetPostman()
 	for _, a := range p.actors {
-		a.Inbox(msg)
+		err := a.Inbox(msg)
+		if err != nil {
+			slog.Warn("actor inbox error on broadcasting message", slog.String("actor-address", msg.To.String()), slog.String("error", err.Error()))
+		}
 	}
 }
 
-func Subcribe(msg Message) {
-	SendMessage(msg)
+func Subcribe(msg Message) error {
+	return SendMessage(msg)
 }
 
 func Shutdown() {

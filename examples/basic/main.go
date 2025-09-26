@@ -51,46 +51,47 @@ type RemoveQuantityToProductPayload struct {
 }
 
 // Process processes incoming messages and updates the state accordingly.
-func (state *ProductsState) Process(inbox <-chan actor.Message) {
-	for {
-		msg := <-inbox
-		switch paylaod := msg.Body.(type) {
+func (state *ProductsState) Process(msg actor.Message) {
+	switch paylaod := msg.Body.(type) {
 
-		case AddNewProductPayload:
-			slog.Info("AddProductMsg")
-			p := paylaod.Product
-			state.products = append(state.products, p)
+	case AddNewProductPayload:
+		slog.Info("AddProductMsg")
+		p := paylaod.Product
+		state.products = append(state.products, p)
 
-		case AddQuantityToProductPayload:
-			slog.Info("AddQuantityProductMsg")
-			p := paylaod.Product
-			cp := state.getProduct(p.Code)
-			if cp != nil {
-				cp.Quantity += p.Quantity
-				slog.Info("AddQuantityProductMsg update with success", slog.Int("qty", p.Quantity))
-			} else {
-				slog.Info("AddQuantityProductMsg update fail")
-			}
-
-		case RemoveQuantityToProductPayload:
-			slog.Info("RemoveQuantityProductMsg")
-			p := paylaod.Product
-			cp := state.getProduct(p.Code)
-			if cp != nil {
-				cp.Quantity -= p.Quantity
-				slog.Info("RemoveQuantityProductMsg update with success", slog.Int("qty", p.Quantity))
-			} else {
-				slog.Info("RemoveQuantityProductMsg update fail")
-			}
-
-		default:
-			slog.Warn("this msg is unknown", slog.String("msg", msg.String()))
+	case AddQuantityToProductPayload:
+		slog.Info("AddQuantityProductMsg")
+		p := paylaod.Product
+		cp := state.getProduct(p.Code)
+		if cp != nil {
+			cp.Quantity += p.Quantity
+			slog.Info("AddQuantityProductMsg update with success", slog.Int("qty", p.Quantity))
+		} else {
+			slog.Info("AddQuantityProductMsg update fail")
 		}
 
-		slog.Info("---------------------------------------------------")
-		slog.Info("-- Quantity of items in first product", slog.Int("num", state.products[0].Quantity))
-		slog.Info("---------------------------------------------------")
+	case RemoveQuantityToProductPayload:
+		slog.Info("RemoveQuantityProductMsg")
+		p := paylaod.Product
+		cp := state.getProduct(p.Code)
+		if cp != nil {
+			cp.Quantity -= p.Quantity
+			slog.Info("RemoveQuantityProductMsg update with success", slog.Int("qty", p.Quantity))
+		} else {
+			slog.Info("RemoveQuantityProductMsg update fail")
+		}
+
+	default:
+		slog.Warn("this msg is unknown", slog.String("msg", msg.String()))
 	}
+
+	slog.Info("---------------------------------------------------")
+	slog.Info("-- Quantity of items in first product", slog.Int("num", state.products[0].Quantity))
+	slog.Info("---------------------------------------------------")
+}
+
+func (state *ProductsState) GetState() any {
+	return state.products
 }
 
 // Shutdown cleans up the state when the actor is shutting down.
@@ -101,36 +102,42 @@ func (state *ProductsState) Shutdown() {
 
 func main() {
 	slog.Info("---- start of basic example -----")
-	productActor, err := actor.NewActor(
-		actor.NewAddress("local", "product"),
+
+	warehouseAddress := actor.NewAddress("local", "warehouse")
+
+	warehouseActor, err := actor.NewActor(
+		warehouseAddress,
 		NewProductState(),
 	)
+
 	if err != nil {
+		slog.Error("error on create actor", slog.String("err", err.Error()))
 		os.Exit(1)
 	}
 
-	err = actor.RegisterActor(&productActor)
+	err = actor.RegisterActor(&warehouseActor)
 	if err != nil {
+		slog.Error("error on register actor", slog.String("err", err.Error()))
 		os.Exit(1)
 	}
 
 	msg := actor.NewMessage(
-		actor.NewAddress("local", "product"),
-		actor.NewAddress("local", "product"),
-		AddNewProductPayload{Product{Code: "ABC", Quantity: 5}},
+		warehouseAddress,
 		nil,
+		AddNewProductPayload{Product{Code: "ABC", Quantity: 5}},
+		false,
 	)
 	msg2 := actor.NewMessage(
-		actor.NewAddress("local", "product"),
-		actor.NewAddress("local", "product"),
-		AddQuantityToProductPayload{Product{Code: "ABC", Quantity: 10}},
+		warehouseAddress,
 		nil,
+		AddQuantityToProductPayload{Product{Code: "ABC", Quantity: 10}},
+		false,
 	)
 	msg3 := actor.NewMessage(
-		actor.NewAddress("local", "product"),
-		actor.NewAddress("local", "product"),
-		RemoveQuantityToProductPayload{Product{Code: "ABC", Quantity: 2}},
+		warehouseAddress,
 		nil,
+		RemoveQuantityToProductPayload{Product{Code: "ABC", Quantity: 2}},
+		false,
 	)
 
 	actor.SendMessage(msg)
@@ -138,5 +145,7 @@ func main() {
 	actor.SendMessage(msg3)
 
 	<-time.After(1 * time.Second)
+
+	slog.Info("final state", slog.Any("products", warehouseActor.GetState()))
 	slog.Info("---- end of basic example -------")
 }

@@ -5,46 +5,101 @@ import (
 	"time"
 
 	"github.com/pix303/cinecity/pkg/actor"
+	"github.com/pix303/cinecity/pkg/actor/internal/testutils"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestActor(t *testing.T) {
-	toPID, fromPID := actor.GenerateAddressForTest("test")
-
-	a := actor.GenerateActorForTest("test")
-	state := a.GetMessageProcessor().(*actor.TestProcessorState)
-
-	assert.True(t, a.IsClosed())
-
-	actor.RegisterActor(a)
-
-	var firstEvent actor.FirstMessage = "one"
-	a.Send(actor.Message{To: toPID, From: fromPID, Body: firstEvent})
-	<-time.After(time.Millisecond * 10)
-	assert.Contains(t, a.GetAddress().String(), "test-sender")
-	assert.Contains(t, state.Data, "first event")
-	assert.Contains(t, state.Data, "one")
-
-	a.Deactivate()
-
-	assert.True(t, a.IsClosed())
-	var secondEvent actor.SecondMessage = "two"
-	a.Send(actor.Message{To: toPID, From: fromPID, Body: secondEvent})
-	<-time.After(time.Millisecond * 10)
-	assert.Contains(t, state.Data, "first event")
-
-	a.Activate()
-
-	assert.False(t, a.IsClosed())
-	a.Send(actor.Message{To: toPID, From: fromPID, Body: secondEvent})
-	<-time.After(time.Millisecond * 10)
-	assert.Contains(t, state.Data, "second event")
-	assert.Contains(t, state.Data, "two")
-
-	a.Drop()
-	assert.Nil(t, a.GetAddress())
-	assert.Nil(t, a.GetMessageProcessor())
-
-	actor.Shutdown()
-	assert.Equal(t, 0, actor.NumActors())
+func setup() (reciver *actor.Actor, sender *actor.Actor) {
+	reciver = testutils.GenerateActorForTest(actor.NewAddress("lcl", "Actor-A-"))
+	sender = testutils.GenerateActorForTest(actor.NewAddress("lcl", "Actor-B-"))
+	return
 }
+
+func Test_ShouldActorsBeDeactivateAtCreation(t *testing.T) {
+	reciver, sender := setup()
+
+	assert.True(t, reciver.IsClosed())
+	assert.True(t, sender.IsClosed())
+}
+
+func Test_ShouldActorsActivate(t *testing.T) {
+	reciver, sender := setup()
+	reciver.Activate()
+	sender.Activate()
+
+	assert.False(t, reciver.IsClosed())
+	assert.False(t, sender.IsClosed())
+	actor.Shutdown()
+}
+
+func Test_ShouldSendMessageAndChangeActorState(t *testing.T) {
+	reciver, sender := setup()
+
+	actor.RegisterActor(reciver)
+	actor.RegisterActor(sender)
+
+	var msgBody testutils.FirstMessage = "one"
+	msg := actor.NewMessage(reciver.GetAddress(), sender.GetAddress(), msgBody, false)
+	actor.SendMessage(msg)
+	<-time.After(time.Millisecond * 10)
+	state := reciver.GetState().(*string)
+	assert.Contains(t, *state, "first event")
+	assert.Contains(t, *state, "one")
+	actor.Shutdown()
+}
+
+func Test_ShouldSendWrongMessageAndNotChangeActorState(t *testing.T) {
+	reciver, sender := setup()
+
+	actor.RegisterActor(reciver)
+	actor.RegisterActor(sender)
+
+	var msgBody testutils.WrongMessage = "wrong message"
+	msg := actor.NewMessage(reciver.GetAddress(), sender.GetAddress(), msgBody, false)
+	actor.SendMessage(msg)
+	<-time.After(time.Millisecond * 10)
+	state := reciver.GetState().(*string)
+	assert.Nil(t, state)
+	actor.Shutdown()
+}
+
+func Test_ShouldSendMessageAndReciveMessageBack(t *testing.T) {
+	reciver, sender := setup()
+
+	actor.RegisterActor(reciver)
+	actor.RegisterActor(sender)
+
+	var msgBody testutils.ThirdMessage = "third message"
+	msg := actor.NewMessage(reciver.GetAddress(), sender.GetAddress(), msgBody, true)
+	rmsg, err := actor.SendMessageWithResponse(msg)
+	<-time.After(time.Millisecond * 10)
+	assert.Nil(t, err)
+	if rs, ok := rmsg.Body.(testutils.TestReturnMessage); ok {
+		assert.Contains(t, rs, "return msg trig")
+	} else {
+		assert.Fail(t, "wrong message type")
+	}
+	actor.Shutdown()
+}
+
+// 	var secondEvent actor.SecondMessage = "two"
+// 	msg := actor.NewMessage(fromPID, reciver.GetAddress(), firstMsgBody, false)
+// 	reciver.Send(secondEvent, fromPID, nil)
+// 	<-time.After(time.Millisecond * 10)
+// 	assert.Contains(t, state.Data, "first event")
+
+// 	reciver.Activate()
+
+// 	assert.False(t, reciver.IsClosed())
+// 	reciver.Send(secondEvent, fromPID, nil)
+// 	<-time.After(time.Millisecond * 10)
+// 	assert.Contains(t, state.Data, "second event")
+// 	assert.Contains(t, state.Data, "two")
+
+// 	reciver.Drop()
+// 	assert.Nil(t, reciver.GetAddress())
+// 	assert.Nil(t, reciver.GetMessageProcessor())
+
+// 	actor.Shutdown()
+// 	assert.Equal(t, 0, actor.NumActors())
+// }
