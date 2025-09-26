@@ -26,6 +26,15 @@ func NewMessage(to *Address, from *Address, body any, withReturn bool) Message {
 	}
 }
 
+func NewReturnMessage(body any, originalMessage Message) Message {
+	return NewMessage(
+		originalMessage.From,
+		originalMessage.To,
+		body,
+		false,
+	)
+}
+
 type WrappedMessage struct {
 	Message *Message
 	Err     error
