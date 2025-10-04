@@ -3,11 +3,12 @@ package actor
 import "fmt"
 
 type Message struct {
-	From       *Address
-	To         *Address
-	Body       any
-	WithReturn bool
-	ReturnChan chan WrappedMessage
+	From          *Address
+	To            *Address
+	Body          any
+	WithReturn    bool
+	ReturnChan    chan WrappedMessage
+	ReturnTimeout int
 }
 
 var EmptyMessage = Message{}
@@ -18,12 +19,17 @@ func NewMessage(to *Address, from *Address, body any, withReturn bool) Message {
 		c = make(chan WrappedMessage, 1)
 	}
 	return Message{
-		To:         to,
-		From:       from,
-		Body:       body,
-		WithReturn: withReturn,
-		ReturnChan: c,
+		To:            to,
+		From:          from,
+		Body:          body,
+		WithReturn:    withReturn,
+		ReturnChan:    c,
+		ReturnTimeout: 60,
 	}
+}
+
+func (msg *Message) SetTimeout(value int) {
+	msg.ReturnTimeout = value
 }
 
 func NewReturnMessage(body any, originalMessage Message) Message {
@@ -41,6 +47,9 @@ type WrappedMessage struct {
 }
 
 func NewWrappedMessage(msg *Message, err error) WrappedMessage {
+	if msg == nil {
+		msg = &EmptyMessage
+	}
 	return WrappedMessage{msg, err}
 }
 
