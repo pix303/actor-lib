@@ -97,7 +97,7 @@ func (a *Actor) InboxAndWaitResponse(msg Message) (Message, error) {
 	case returnMsg := <-returnChan:
 		return *returnMsg.Message, returnMsg.Err
 	case <-ctx.Done():
-		return Message{}, ErrSendWithReturnTimeout
+		return EmptyMessage, ErrSendWithReturnTimeout
 	}
 }
 
