@@ -95,19 +95,24 @@ func SendMessage(msg Message) error {
 	return nil
 }
 
-func SendMessageWithResponse(msg Message) (Message, error) {
+func SendMessageWithResponse[T any](msg Message) (T, error) {
 	p := GetPostman()
 	actor := p.actors[msg.To.String()]
 	if actor == nil {
 		slog.Error("actor not found", slog.String("actor-address", msg.To.String()))
-		return Message{}, ErrActorNotFound
+		return *new(T), ErrActorNotFound
 	}
 
 	returnMsg, err := actor.InboxAndWaitResponse(msg)
 	if err != nil {
-		slog.Error("actor inbox error", slog.String("actor-address", msg.To.String()), slog.String("error", err.Error()))
+		slog.Error("actor inbox return error", slog.String("actor-address", msg.To.String()), slog.String("error", err.Error()))
 	}
-	return returnMsg, err
+
+	if body, ok := returnMsg.Body.(T); ok {
+		return body, nil
+	}
+
+	return *new(T), err
 }
 
 func BroadcastMessage(msg Message) {
